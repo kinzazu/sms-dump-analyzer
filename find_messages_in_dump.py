@@ -1,76 +1,93 @@
 import argparse
 import os
+# import lo
+from tshark_search import utils
 from datetime import datetime
-from tshark_search.src import TsharkExtractor
-from tshark_search.src import FilePool
+from pathlib import Path
+from tshark_search.extractor import TsharkExtractor
+from tshark_search import Parser
+from tshark_search import analyzer
+from tshark_search.report import AsciiReporter, MarkdownReporter
+from tshark_search.file_pool import FilePool
+from tshark_search.models import FilterField, MsgType
+from tshark_search import msgstore
 
-# FIELDS = ["frame.time.epoch", "gms_old.opCode", "e164.msisdn", "tcap.tid", "e212.imsi"]
-# def run_tshark(pcap: str, disp_filter: str = "") -> Iterable[list[str]]:
-#     cmd = ["tshark", "-r", pcap, "-Y", disp_filter, "-T", "fields"]
-#     for f in FIELDS:
-#         cmd += ["-e", f]
-#         cmd += ["-E", "header=n", "-E", "separator=,"]
-#         with subprocess.Popen(cmd, stdout=subprocess.PIPE, text=True) as proc:
-#             for line in proc.stdout: yield line.rstrip("\n").split(",")
-
-
+ASCII_REPORT_WIDTH = 80
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dump_folder', required=True)
-    parser.add_argument('--since',help="")
-    parser.add_argument('--to',help="")
-    parser.add_argument('--msisdn', help="")
-    parser.add_argument('--imsi', help="")
+    parser.add_argument('--since',help="filter dump files older than this date", required=True)
+    parser.add_argument('--to',help="filter dump files younger than this date", required=True)
+    filters = parser.add_mutually_exclusive_group(required=True)
+    filters.add_argument('--msisdn', help="select msisdn as filter and its value")
+    parser.add_argument('--dump_folder', default='.', help='path to folder containing dumps')
+    parser.add_argument('-r','--render',help="select render type beetween ASCII and markdown", required=True, choices=['ascii','md'])
+    # filters.add_argument('--imsi', help="select imsi as filter and its value")
 
     # test data;
-    a = ['--dump_folder', '/Users/nikoleontiev/svyazcom/dump/p2p', '--msisdn', '79509995586']
-    return parser.parse_args(a)
+    # a = ['--dump_folder', '/Users/nikoleontiev/svyazcom/dump/p2p', '--msisdn', '79509995586']
+    # return parser.parse_args(a)
+    return parser.parse_args()
 
-def check_os():
-    v = os.uname()
-    return v.sysname
 
-def actions_based_on_os():
-    match check_os():
-        case 'Darwin':
-            print('You are using Mac OS X')
+def get_terminal_size():
+    try:
+        return os.get_terminal_size().columns
+    except OSError:
+        return 80
 
-        case 'Linux':
-            print('You are using Linux')
-            print('To install Tshark you need to install wireshark-cli package')
-            print('ex. for Ubuntu: `sudo apt install wireshark-cli`')
+
+def render_report(chain, render_type):
+    if render_type == 'ascii':
+        report_generator = AsciiReporter(total_width=ASCII_REPORT_WIDTH)
+        print(report_generator.render(chain))
+    elif render_type == 'md':
+        report_generator = MarkdownReporter()
+        print(report_generator.render(chain))
+    else:
+        print(f'Unknown render type: {render_type}')
+
 
 def main():
-    actions_based_on_os()
     args = parse_args()
+    store = msgstore.MessageStore()
+    parser = Parser.JsonParser()
+    if args.dump_folder:
+        fp = FilePool(args.dump_folder)
+    else:
+        raise ValueError('dump_folder must be specified')
+    # with open('cached_output.pcap.json') as json_file:
+    #     fjson = json.load(json_file)
 
-    since = datetime.fromisoformat(args.since) if args.since else datetime.min
-    to    = datetime.fromisoformat(args.to)    if args.to    else datetime.max
+    # for i in parser.parse_frames(fjson):
+    #     print(i)
 
-    pool = FilePool(args.dump_folder)
-    extractor = TsharkExtractor(args.msisdn)
-    analyzer = Analyzer()
+    # path = Path('/Users/nikoleontiev/svyazcom/dump/p2p/case_2506/output.pcap')
+    # test big file
+    # path = Path('/Users/nikoleontiev/svyazcom/dump/p2p/output.pcap')
 
-    for meta in pool.select(since, to):
-        for msg in extractor.scan(meta.filepath):
-            analyzer.feed(msg)
+    since = datetime.strptime(args.since, "%Y-%m-%d") if args.since else datetime.fromtimestamp(0)
+    to = datetime.strptime(args.to, "%Y-%m-%d") if args.to else datetime.now()
 
-    reporter = AsciiReporter()
-    for tx in analyzer.transactions():
-        print(reporter.render(tx))
-        print("-" * 40)
+    tshark_filter = {"start": since.timestamp(), "end":to.timestamp()}
 
+    print(f'{since=}, {to=}')
+    for file in fp.select(since=since, to=to):
+        start = datetime.now()
+        extractor = TsharkExtractor(date_filter=tshark_filter,
+                                    pcap_path=file.filepath,
+                                    save_json=False)
 
-    # for root, file in file_generator:
-    #     full_path = root + '/' + file
-    #     cmd = ['/Applications/Wireshark.app/Contents/MacOS/capinfos','-a','-e','-T','-r','-m', f'{full_path}']
-    #     res = subprocess.run(cmd, shell=True, text=True, capture_output=True)
-    #     if res.returncode == 0:
-    #         result = res.stdout.decode('utf-8').split('\n')
-    #         billet = {}
-    #         for line in result:
-    #            file, first_packet, last_packet = line.split(',')
+        for frame in extractor.scan():
+            store.add(frame)
+
+        print(f'elapsed time for {file.filepath.name}: {datetime.now() - start}')
+
+    message_chain = analyzer.MessageChain(store, args.msisdn)
+    message_chain.build()
+    chain = message_chain.get_chain()
+
+    render_report(chain, args.render)
 
 
 if __name__ == '__main__':

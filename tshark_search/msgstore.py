@@ -1,6 +1,6 @@
 from collections import defaultdict
 from dataclasses import dataclass
-from .models import Message
+from .models import Message, MsgType
 from typing import Iterator
 
 @dataclass()
@@ -37,7 +37,7 @@ class MessageStore:
     def by_imsi(self, imsi: str) -> list[Message]:
         return [self._all[i] for i in self._by_imsi.get(imsi, [])]
 
-    def by_opcode(self, opcode: int) -> list[Message]:
+    def by_opcode(self, opcode: MsgType) -> list[Message]:
        return [self._all[i] for i in self._by_opcode.get(opcode, [])]
 
     def filter_all(self) -> Iterator[Message]:

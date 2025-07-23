@@ -65,10 +65,26 @@ import subprocess
 #     )
 #
 
+
+"""
+cache implementation:
+add .meta for filter information and output file for this filters.
+for ex. it will be json file
+    .meta.json:
+    [ "since": "1970-0-0"    # time string
+      "to": "12039871237868" # timestamp
+      "msisdn": "1234907918"
+    ]
+ 
+  
+If executed program contain same filter then use cache file else use `TsharkExtractor`
+
+"""
+
 class TsharkExtractor:
     """Extract and process tshark messages from pcap files."""
 
-    def __init__(self, filter_value: str, _filter=None, tshark_path=None, save_json=False, pcap_path=None):
+    def __init__(self, date_filter:dict , tshark_path='tshark', save_json=False, pcap_path=None):
         """Initialize TsharkExtractor.
 
         Args:
@@ -76,29 +92,27 @@ class TsharkExtractor:
             filter_value: Value to filter on
             tshark_path: Optional path to tshark executable
         """
-        self.default_path = '/Applications/Wireshark.app/Contents/MacOS/tshark'
-        self.tshark_path = tshark_path or self.default_path
-        if not Path(self.tshark_path).exists():
-            raise FileNotFoundError(f"Tshark not found at {self.tshark_path}")
-        self._filter = f'{_filter}=="{filter_value}"'
+        self.tshark_path = tshark_path
+        self._date_filter = date_filter
         self._parser = JsonParser()
         self._save_to_file = save_json
+        self._pcap_file = pcap_path
 
-    def scan(self, pcap: Path):
-        """Scan pcap file and extract messages.
-
-        Args:
-            pcap: Path to pcap file
+    def scan(self):
+        """
+        Scan a pcap file and extract Message objects by the Parser object.
 
         Yields:
             Message objects parsed from pcap
         """
-        # cmd = [self.tshark_path, "-r", str(pcap.absolute()), "-2", "-R", "gsm_map", "-Y", self._filter, "-T", "json"]
-        cmd = [self.tshark_path, "-r", str(pcap.absolute()), "-Y", "gsm_map", "-T", "json"]
+        start = self._date_filter.get("start")
+        end = self._date_filter.get("end")
 
-        # print(*cmd)
-        start = datetime.datetime.now()
-        # print(datetime.datetime.now())
+        # cmd = [self.tshark_path, "-r", str(pcap.absolute()), "-2", "-R", "gsm_map", "-Y", self._filter, "-T", "json"]
+        cmd = [self.tshark_path, "-r", str(self._pcap_file.absolute()), "-2","-R",
+               f"frame.time_epoch >={start} and frame.time_epoch <={end} ", "-Y", "gsm_map", "-T", "json"
+              ]
+
         tshark_command_result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         # print(f'exe time: {datetime.datetime.now() - start}')
         if tshark_command_result.returncode != 0:
@@ -106,18 +120,8 @@ class TsharkExtractor:
         stdout_json = json.loads(tshark_command_result.stdout)
 
         if self._save_to_file:
-            with open(f'cached_{pcap.name}.json', 'w') as cache_file:
+            with open(f'cached_{self._pcap_file.name}.json', 'w') as cache_file:
                 json.dump(stdout_json, cache_file)
 
         for _frame in stdout_json:
             yield self._parser.parse_frame(_frame)
-
-
-if __name__ == '__main__':
-    path = Path('/Users/nikoleontiev/svyazcom/dump/p2p/case_2506/output.pcap')
-    # test big file
-    # path = Path('/Users/nikoleontiev/svyazcom/dump/10-04-2023_15-29-43--15-30-49.pcapng')
-    test = TsharkExtractor(FilterField.MSISDN.value, filter_value='79003350276')
-    # test = TsharkExtractor(msisdn='79636491816')
-    for frame in test.scan(path):
-        print(frame)

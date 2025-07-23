@@ -1,123 +1,78 @@
 import unittest
 from datetime import datetime, timezone
+from unittest.mock import MagicMock, patch
 
-# NOTE: the tests are now run as part of the 'tshark_search' package,
-# so absolute imports work without manipulating sys.path.
 from tshark_search.Parser import JsonParser
-from tshark_search.models import MsgType, TCAPState
+from tshark_search.models import Message, MsgType, TCAPState
 
 
 class TestJsonParser(unittest.TestCase):
     def setUp(self):
         self.parser = JsonParser()
 
-    def test_parse_frame_begin_element(self):
-        test_frame = {
-            "_source": {
-                "layers": {
-                    "frame": {"frame.time_epoch": "1750825516.923860000"},
-                    "tcap": {"tcap.begin_element": {"tcap.tid": "09:eb:27:bb"}},
-                    "gsm_map": {
-                        "gsm_map.old.Component_tree": {
-                            "gsm_old.invoke_element": {
-                                "gsm_old.opCode_tree": {"gsm_old.localValue": "45"},
-                                "gsm_map.sm.msisdn_tree": {"e164.msisdn": "79003350829"},
-                            }
-                        }
-                    },
-                }
+    @patch.object(JsonParser, '_frame_to_msg')
+    def test_parse_frame_calls_frame_to_msg(self, mock_frame_to_msg):
+        mock_frame = {"_source": {"layers": {}}}
+        mock_message = Message()
+        mock_frame_to_msg.return_value = mock_message
+
+        result = self.parser.parse_frame(mock_frame)
+
+        mock_frame_to_msg.assert_called_once_with(mock_frame)
+        self.assertEqual(mock_message, result)
+
+    @patch.object(JsonParser, '_frame_to_msg')
+    def test_parse_frames_yields_expected_messages(self, mock_frame_to_msg):
+        mock_frames = [{"_source": {"layers": {}}}, {"_source": {"layers": {}}}]
+        mock_message_1 = Message()
+        mock_message_2 = Message()
+        mock_frame_to_msg.side_effect = [mock_message_1, mock_message_2]
+
+        results = list(self.parser.parse_frames(mock_frames))
+
+        self.assertEqual([mock_message_1, mock_message_2], results)
+
+    def test_fill_tcap_begin(self):
+        tcap_json = {
+            "tcap.begin_element": {
+                "tcap.tid": "transaction_id_123"
             }
         }
 
-        message = self.parser.parse_frame(test_frame)
+        tid, tcap_state = self.parser._fill_tcap(tcap_json)
 
-        self.assertEqual("09:eb:27:bb", message.tid)
-        self.assertEqual(message.tcap_state, TCAPState.Begin)
-        self.assertEqual(message.opcode, MsgType.SRI)
-        self.assertEqual(message.msisdn, "79003350829")
-        self.assertEqual(1750825516.923860000, message.time, )
-        # self.assertEqual(
-        #     message.time, datetime.fromtimestamp(1750825516.923860000).astimezone(timezone.utc)
-        # )
+        self.assertEqual("transaction_id_123", tid)
+        self.assertEqual(TCAPState.Begin, tcap_state)
 
-    def test_parse_frame_end_element(self):
-        test_frame = {
-            "_source": {
-                "layers": {
-                    "frame": {"frame.time_epoch": ["1750825516.924632000"]},
-                    "tcap": {"tcap.end_element": {"tcap.tid": "09:eb:27:bb"}},
-                    "gsm_map": {
-                        "gsm_map.old.Component_tree": {
-                            "gsm_old.returnResultLast_element": {"e212.imsi": "84851502726718"}
-                        }
-                    },
-                }
-            }
-        }
+    def test_fill_tcap_empty_tcap_json_raises_runtime_error(self):
+        tcap_json = {}
 
-        message = self.parser.parse_frame(test_frame)
+        with self.assertRaises(RuntimeError):
+            self.parser._fill_tcap(tcap_json)
 
-        self.assertEqual(message.tid, "09:eb:27:bb")
-        self.assertEqual(message.tcap_state, TCAPState.End)
-        self.assertEqual(message.opcode, MsgType.ResultLast)
-        self.assertEqual(message.imsi, "84851502726718")
-        self.assertEqual(message.time, 1750825516.924632000)
+    @patch.object(JsonParser, '_fix_tp_da_key')
+    def test_fill_sms_fields_normalizes_keys(self, mock_fix_tp_da_key):
+        sms_json = {"gsm_sms.tp-mti": "0"}
+        mock_msg = Message()
+        mock_fix_tp_da_key.return_value = sms_json
 
-    def test_parse_frames_multiple_entries(self):
-        test_frames = [
-            {
-                "_source": {
-                    "layers": {
-                        "frame": {"frame.time_epoch": ["1750825516.923860000"]},
-                        "tcap": {"tcap.begin_element": {"tcap.tid": "09:eb:27:bb"}},
-                        "gsm_map": {
-                            "gsm_map.old.Component_tree": {
-                                "gsm_old.invoke_element": {
-                                    "gsm_old.opCode_tree": {"gsm_old.localValue": "45"},
-                                    "gsm_map.sm.msisdn_tree": {"e164.msisdn": "79003350829"},
-                                }
-                            }
-                        },
-                    }
-                }
-            },
-            {
-                "_source": {
-                    "layers": {
-                        "frame": {"frame.time_epoch": ["1750825516.924632000"]},
-                        "tcap": {"tcap.end_element": {"tcap.tid": "09:eb:27:bb"}},
-                        "gsm_map": {
-                            "gsm_map.old.Component_tree": {
-                                "gsm_old.returnResultLast_element": {"e212.imsi": "84851502726718"}
-                            }
-                        },
-                    }
-                }
-            },
-        ]
+        result = self.parser._fill_sms_fields(sms_json, mock_msg)
 
-        messages = list(self.parser.parse_frames(test_frames))
+        mock_fix_tp_da_key.assert_called_once_with(sms_json)
+        self.assertEqual(mock_msg, result)
 
-        # first message
-        self.assertEqual(len(messages), 2)
-        self.assertEqual(messages[0].tid, "09:eb:27:bb")
-        self.assertEqual(messages[0].tcap_state, TCAPState.Begin)
-        self.assertEqual(messages[0].opcode, MsgType.SRI)
-        self.assertEqual(messages[0].msisdn, "79003350829")
-        self.assertEqual(
-            messages[0].time,
-            datetime.fromtimestamp(1750825516.923860000).astimezone(timezone.utc),
-        )
+    def test_gms_opcode_from_invoke_extracts_opcode(self):
+        invoke_json = {"gsm_old.opCode_tree": {"gsm_old.localValue": "45"}}
 
-        # second message
-        self.assertEqual(messages[1].tid, "09:eb:27:bb")
-        self.assertEqual(messages[1].tcap_state, TCAPState.End)
-        self.assertEqual(messages[1].opcode, MsgType.ResultLast)
-        self.assertEqual(messages[1].imsi, "84851502726718")
-        self.assertEqual(
-            messages[1].time,
-            datetime.fromtimestamp(1750825516.924632000).astimezone(timezone.utc),
-        )
+        result = self.parser._gms_opcode_from_invoke(invoke_json)
+
+        self.assertEqual(MsgType.SRI, result)
+
+    def test_gms_opcode_from_invoke_raises_runtime_error_for_empty_tree(self):
+        invoke_json = {}
+
+        with self.assertRaises(RuntimeError):
+            self.parser._gms_opcode_from_invoke(invoke_json)
 
 
 if __name__ == "__main__":

@@ -1,10 +1,12 @@
 ### PythonVanilla template
 #.gitignore
 .idea
+.junie
 old_files
 cached_output.pcap.json
 chat-41ce474e-5aa7-43ae-90c3-475e26f585c3.md
-example*
+example_*
+example_sri.json
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -72,3 +74,4 @@ cover/
 __pypackages__/
 
 
+!/example_sri.json

@@ -32,7 +32,7 @@ class CapInfo:
 
         capinfos_output = proc.stdout.strip()
         capinfos_output = capinfos_output.split(',')
-        print(capinfos_output)
+        # print(capinfos_output)
 
         obj.filepath = Path(capinfos_output[0])
         obj.frames = int(capinfos_output[1])
@@ -44,8 +44,5 @@ class CapInfo:
 
     def __repr__(self):
         # Show only file name not full path -> filepath.name
-        return f'<CapInfos({self.filepath.name}) frames={self.frames} start={self.ts_start:1f} end={self.ts_end}>'
+        return f'<CapInfos({self.filepath.name}), {self.frames=} {self.ts_start=} {self.ts_end=}>'
 
-if __name__ == '__main__':
-    test_obj = CapInfo.form_info('~/svyazcom/dump/10-04-2023_15-29-43--15-30-49.pcapng')
-    print(test_obj, test_obj.duration)

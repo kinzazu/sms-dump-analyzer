@@ -1,5 +1,5 @@
 from .msgstore import MessageStore, Message
-from tshark_search.models import MsgType
+from src.models import MsgType
 
 
 class MessageChain(object):

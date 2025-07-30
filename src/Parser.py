@@ -2,7 +2,7 @@ import json
 from typing import Iterable, Dict, Any, Literal
 from unittest import case
 
-from tshark_search.models import TCAPState, ErrorCode
+from src.models import TCAPState, ErrorCode
 from .models import Message, MsgType, TCAPState, RPDestinationAddress, MessageTypeIndicator
 from enum import Enum
 from datetime import datetime, timezone

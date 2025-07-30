@@ -1,18 +1,14 @@
 import argparse
 import os
-# import lo
-from tshark_search import utils
 from datetime import datetime
-from pathlib import Path
-from tshark_search.extractor import TsharkExtractor
-from tshark_search import Parser
-from tshark_search import analyzer
-from tshark_search.report import AsciiReporter, MarkdownReporter
-from tshark_search.file_pool import FilePool
-from tshark_search.models import FilterField, MsgType
-from tshark_search import msgstore
+from src import analyzer
+from src import msgstore
+from src.extractor import TsharkExtractor
+from src.file_pool import FilePool
+from src.report import AsciiReporter, MarkdownReporter
 
 ASCII_REPORT_WIDTH = 80
+
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -21,7 +17,7 @@ def parse_args():
     filters = parser.add_mutually_exclusive_group(required=True)
     filters.add_argument('--msisdn', help="select msisdn as filter and its value")
     parser.add_argument('--dump_folder', default='.', help='path to folder containing dumps')
-    parser.add_argument('-r','--render',help="select render type beetween ASCII and markdown", required=True, choices=['ascii','md'])
+    parser.add_argument('-r','--render',help="select render type between ASCII and markdown", required=True, choices=['ascii','md'])
     # filters.add_argument('--imsi', help="select imsi as filter and its value")
 
     # test data;
@@ -51,20 +47,10 @@ def render_report(chain, render_type):
 def main():
     args = parse_args()
     store = msgstore.MessageStore()
-    parser = Parser.JsonParser()
     if args.dump_folder:
         fp = FilePool(args.dump_folder)
     else:
         raise ValueError('dump_folder must be specified')
-    # with open('cached_output.pcap.json') as json_file:
-    #     fjson = json.load(json_file)
-
-    # for i in parser.parse_frames(fjson):
-    #     print(i)
-
-    # path = Path('/Users/nikoleontiev/svyazcom/dump/p2p/case_2506/output.pcap')
-    # test big file
-    # path = Path('/Users/nikoleontiev/svyazcom/dump/p2p/output.pcap')
 
     since = datetime.strptime(args.since, "%Y-%m-%d") if args.since else datetime.fromtimestamp(0)
     to = datetime.strptime(args.to, "%Y-%m-%d") if args.to else datetime.now()

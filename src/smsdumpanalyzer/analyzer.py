@@ -1,5 +1,5 @@
-from .msgstore import MessageStore, Message
-from src.models import MsgType
+from smsdumpanalyzer.msgstore import MessageStore, Message
+from smsdumpanalyzer.models import MsgType
 
 
 class MessageChain(object):

@@ -2,8 +2,7 @@ import datetime
 # from enum import Enum
 from pathlib import Path
 
-from src.Parser import JsonParser
-from src.models import FilterField
+from smsdumpanalyzer.Parser import JsonParser
 import json
 import subprocess
 

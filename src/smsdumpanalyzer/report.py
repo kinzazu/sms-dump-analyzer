@@ -18,6 +18,26 @@ class Reporter:
     def _fmt_time(cls, ts: datetime) -> str:
         return ts.strftime("%d/%m %H:%M:%S")
 
+    @classmethod
+    def _chain_is_empty(cls, chain):
+        """
+        Checks whether the provided chain is empty or not.
+
+        This method evaluates if the given chain of messages contains any
+        elements. It converts the chain into a list of messages and checks if
+        the resulting list is empty.
+
+        :param chain: Iterable of messages to check.
+        :type chain: Iterable[Message]
+        :return: True if the chain is empty, False otherwise.
+        :rtype: bool
+        """
+        msgs: List[Message] = list(chain)
+        if not msgs:
+            return True
+        return False
+
+
 
 class AsciiReporter(Reporter):
     """

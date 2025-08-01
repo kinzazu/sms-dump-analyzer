@@ -1,6 +1,6 @@
 from typing import List, Iterable
 from pathlib import Path
-from .capinfo import CapInfo
+from smsdumpanalyzer.capinfo import CapInfo
 
 
 class FilePool:

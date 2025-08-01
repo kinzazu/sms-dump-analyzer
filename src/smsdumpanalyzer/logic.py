@@ -1,11 +1,11 @@
 import argparse
 import os
 from datetime import datetime
-from src import analyzer
-from src import msgstore
-from src.extractor import TsharkExtractor
-from src.file_pool import FilePool
-from src.report import AsciiReporter, MarkdownReporter
+import analyzer
+import msgstore
+from smsdumpanalyzer.extractor import TsharkExtractor
+from smsdumpanalyzer.file_pool import FilePool
+from smsdumpanalyzer.report import AsciiReporter, MarkdownReporter, PlantUMLReporter
 
 ASCII_REPORT_WIDTH = 80
 
@@ -36,12 +36,15 @@ def get_terminal_size():
 def render_report(chain, render_type):
     if render_type == 'ascii':
         report_generator = AsciiReporter(total_width=ASCII_REPORT_WIDTH)
-        print(report_generator.render(chain))
+
     elif render_type == 'md':
         report_generator = MarkdownReporter()
+
+    elif render_type == 'uml':
+        report_generator = PlantUMLReporter()
         print(report_generator.render(chain))
     else:
-        print(f'Unknown render type: {render_type}')
+    print(report_generator.render(chain))
 
 
 def main():

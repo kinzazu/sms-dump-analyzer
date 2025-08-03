@@ -1,10 +1,6 @@
-import datetime
-# from enum import Enum
-from pathlib import Path
-
-from smsdumpanalyzer.Parser import JsonParser
 import json
 import subprocess
+from .Parser import JsonParser
 
 # FIELDS = ["frame.number", "frame.time_epoch", "gms_map", "tcap"]
 

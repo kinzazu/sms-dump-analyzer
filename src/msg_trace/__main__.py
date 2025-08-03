@@ -1,4 +1,4 @@
-from logic import main
+from .logic import main
 
 
 if __name__ == '__main__':

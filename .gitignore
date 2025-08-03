@@ -2,11 +2,13 @@
 #.gitignore
 .idea
 .junie
+.DS_Store
 old_files
 cached_output.pcap.json
 chat-41ce474e-5aa7-43ae-90c3-475e26f585c3.md
 example_*
 example_sri.json
+/reports
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

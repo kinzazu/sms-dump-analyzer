@@ -1,11 +1,9 @@
 import argparse
 import os
 from datetime import datetime
-import analyzer
-import msgstore
-from smsdumpanalyzer.extractor import TsharkExtractor
-from smsdumpanalyzer.file_pool import FilePool
-from smsdumpanalyzer.report import AsciiReporter, MarkdownReporter, PlantUMLReporter
+from .extractor import TsharkExtractor
+from .file_pool import FilePool
+from .report import AsciiReporter, MarkdownReporter, PlantUMLReporter
 
 ASCII_REPORT_WIDTH = 80
 
@@ -44,7 +42,7 @@ def render_report(chain, render_type):
         report_generator = PlantUMLReporter()
         print(report_generator.render(chain))
     else:
-    print(report_generator.render(chain))
+        print(f'Unknown render type: {render_type}')
 
 
 def main():

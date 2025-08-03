@@ -1,7 +1,7 @@
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import Iterator
-from smsdumpanalyzer.models import Message, MsgType
+from .models import Message, MsgType
 
 @dataclass()
 class _Bucket:

@@ -1,5 +1,4 @@
 import os
-from functools import total_ordering
 from typing import Iterable, List
 from datetime import datetime
 from .models import Message, MsgType
@@ -59,8 +58,9 @@ class AsciiReporter(Reporter):
     # ────────────────────────────────────────────────────────── public ──
     def render(self, chain: Iterable[Message]) -> str:
         msgs: List[Message] = list(chain)
-        if not msgs:
-            return "<empty chain>"
+        if self._chain_is_empty(chain):
+           return  "<empty chain>"
+
 
         # Get Header from the 1st message
         msisdn = msgs[0].msisdn or "<unknown-msisdn>"
@@ -156,8 +156,8 @@ class MarkdownReporter(Reporter):
 
     def render(self, chain: list[Message]) -> str:
         msgs: List[Message] = list(chain)
-        if not msgs:
-            return "<empty chain>"
+        if self._chain_is_empty(chain):
+           return  "<empty chain>"
 
         # Get Header from the 1st message
         msisdn = msgs[0].msisdn or "<unknown-msisdn>"

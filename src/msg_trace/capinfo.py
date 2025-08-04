@@ -2,6 +2,7 @@ import subprocess
 from pathlib import Path
 from datetime import datetime
 
+
 class CapInfo:
     def __init__(self, filepath):
         self.filepath = Path(filepath)
@@ -10,9 +11,8 @@ class CapInfo:
         self.duration = None
         self.frames = None
 
-
     @classmethod
-    def form_info(cls, pcap_path, capinfos_cmd='capinfos'):
+    def form_info(cls, pcap_path, capinfos_cmd="capinfos"):
         """
         Create a capinfos instance from a pcap file using capinfos utility.
         :param pcap_path:
@@ -23,15 +23,15 @@ class CapInfo:
 
         # option description
         # -a start -e end -S Unix timestamp in format -T table output, -r without header -m separated my comma
-        cmd = f'{capinfos_cmd} -S -a -e -T -r -m -c {pcap_path}'
+        cmd = f"{capinfos_cmd} -S -a -e -T -r -m -c {pcap_path}"
 
-        proc = subprocess.run(cmd, shell=True,capture_output= True, text=True)
+        proc = subprocess.run(cmd, shell=True, capture_output=True, text=True)
 
         if proc.returncode != 0:
-            raise RuntimeError(f'capinfos error {proc.returncode}: {proc.stderr.strip()}')
+            raise RuntimeError(f"capinfos error {proc.returncode}: {proc.stderr.strip()}")
 
         capinfos_output = proc.stdout.strip()
-        capinfos_output = capinfos_output.split(',')
+        capinfos_output = capinfos_output.split(",")
         # print(capinfos_output)
 
         obj.filepath = Path(capinfos_output[0])
@@ -44,5 +44,4 @@ class CapInfo:
 
     def __repr__(self):
         # Show only file name not full path -> filepath.name
-        return f'<CapInfos({self.filepath.name}), {self.frames=} {self.ts_start=} {self.ts_end=}>'
-
+        return f"<CapInfos({self.filepath.name}), {self.frames=} {self.ts_start=} {self.ts_end=}>"

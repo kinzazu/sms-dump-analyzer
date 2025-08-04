@@ -1,7 +1,7 @@
 from collections import defaultdict
 from dataclasses import dataclass
-from .models import Message, MsgType
 from typing import Iterator
+from .models import Message, MsgType
 
 @dataclass()
 class _Bucket:

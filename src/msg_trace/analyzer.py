@@ -1,5 +1,5 @@
 from .msgstore import MessageStore, Message
-from tshark_search.models import MsgType
+from .models import MsgType
 
 
 class MessageChain(object):
@@ -19,12 +19,11 @@ class MessageChain(object):
         fsm = self._get_mt_by_imsi(sri_resp)
         fsm_resp = self._get_forward_sm_resp(fsm)
 
-        self.fill_chain(messages_by_msisdn,sri_resp,mo_resp_list,fsm_resp)
+        self.fill_chain(messages_by_msisdn, sri_resp, mo_resp_list, fsm_resp)
 
     def fill_chain(self, *args):
         for list_ in args:
             self._chain.extend(list_)
-
 
     def get_chain(self):
         return sorted(self._chain, key=lambda msg: msg.time)
@@ -37,8 +36,8 @@ class MessageChain(object):
         return self._msg_store.by_msisdn(self._desired_msisdn)
 
     def _get_messages_by_tid(self, messages: list[Message]) -> tuple:
-        sri_resp= set()
-        mo_resp= set()
+        sri_resp = set()
+        mo_resp  = set()
 
         for msg in messages:
             if  msg.opcode == MsgType.SRI:

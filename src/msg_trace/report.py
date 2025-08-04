@@ -1,5 +1,4 @@
 import os
-from functools import total_ordering
 from typing import Iterable, List
 from datetime import datetime
 from .models import Message, MsgType
@@ -17,6 +16,26 @@ class Reporter:
     @classmethod
     def _fmt_time(cls, ts: datetime) -> str:
         return ts.strftime("%d/%m %H:%M:%S")
+
+    @classmethod
+    def _chain_is_empty(cls, chain):
+        """
+        Checks whether the provided chain is empty or not.
+
+        This method evaluates if the given chain of messages contains any
+        elements. It converts the chain into a list of messages and checks if
+        the resulting list is empty.
+
+        :param chain: Iterable of messages to check.
+        :type chain: Iterable[Message]
+        :return: True if the chain is empty, False otherwise.
+        :rtype: bool
+        """
+        msgs: List[Message] = list(chain)
+        if not msgs:
+            return True
+        return False
+
 
 
 class AsciiReporter(Reporter):
@@ -39,8 +58,9 @@ class AsciiReporter(Reporter):
     # ────────────────────────────────────────────────────────── public ──
     def render(self, chain: Iterable[Message]) -> str:
         msgs: List[Message] = list(chain)
-        if not msgs:
-            return "<empty chain>"
+        if self._chain_is_empty(chain):
+           return  "<empty chain>"
+
 
         # Get Header from the 1st message
         msisdn = msgs[0].msisdn or "<unknown-msisdn>"
@@ -136,8 +156,8 @@ class MarkdownReporter(Reporter):
 
     def render(self, chain: list[Message]) -> str:
         msgs: List[Message] = list(chain)
-        if not msgs:
-            return "<empty chain>"
+        if self._chain_is_empty(chain):
+           return  "<empty chain>"
 
         # Get Header from the 1st message
         msisdn = msgs[0].msisdn or "<unknown-msisdn>"

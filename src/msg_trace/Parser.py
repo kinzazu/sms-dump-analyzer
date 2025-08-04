@@ -1,9 +1,5 @@
-import json
-from typing import Iterable, Dict, Any, Literal
-from unittest import case
-
-from tshark_search.models import TCAPState, ErrorCode
-from .models import Message, MsgType, TCAPState, RPDestinationAddress, MessageTypeIndicator
+from typing import Iterable, Any, Literal
+from .models import Message, MsgType, TCAPState, RPDestinationAddress, MessageTypeIndicator, ErrorCode
 from enum import Enum
 from datetime import datetime, timezone
 
@@ -253,7 +249,7 @@ class JsonParser:
 
         m3ua_json = self._fix_m3ua_keys(m3ua_json)
 
-        opc =  m3ua_json["protocol-data"].get("m3ua.protocol_data_opc")
+        opc = m3ua_json["protocol-data"].get("m3ua.protocol_data_opc")
         dpc = m3ua_json["protocol-data"].get("m3ua.protocol_data_dpc")
 
         return opc, dpc

@@ -1,4 +1,4 @@
-from typing import List, Iterable
+from typing import Iterable
 from pathlib import Path
 from .capinfo import CapInfo
 

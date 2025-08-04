@@ -1,11 +1,6 @@
-import datetime
-# from enum import Enum
-from pathlib import Path
-
-from tshark_search.Parser import JsonParser
-from tshark_search.models import FilterField
 import json
 import subprocess
+from .Parser import JsonParser
 
 # FIELDS = ["frame.number", "frame.time_epoch", "gms_map", "tcap"]
 

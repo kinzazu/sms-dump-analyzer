@@ -13,7 +13,7 @@ variables:
 
 job_build:
   stage: build
-  image: python3.11
+  image: python:3.11-slim
   before_script:
     - python3 -m pip install --upgrade build
   script:

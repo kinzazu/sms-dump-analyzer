@@ -1,0 +1,51 @@
+include:
+  - project: 'ci-templates/common'
+    file: '/rules.yml'
+    ref: stable/v1
+
+stages:
+  - build
+  - release
+
+variables:
+  PROJECT_VERSION: ""
+
+
+job_build:
+  image: python3.11
+  before_script:
+    - python3 -m pip install --upgrade build
+  script:
+    - python3 -m build
+  tags:
+    - local
+  artifacts:
+    paths:
+      - dist/
+#    expire_in: 20 days
+
+job_release:
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  extends: .sc_common_if-release-tag
+  variables:
+    PROJECT_VERSION: "$CI_COMMIT_TAG"
+
+  needs:
+    - job: job_build
+      artifacts: true
+
+  script:
+    - ls dist
+    - export RELEASE_DESC="$(awk '/^## \[Unreleased\]/ {found=1; next} /^## / {found=0} found { print }' CHANGELOG.md | awk 'NF')"
+    - echo "$RELEASE_DESC" > release_desc.txt
+
+  release:
+    tag_name: "$PROJECT_VERSION"
+    description: "$RELEASE_DESC"
+    ref: "$CI_COMMIT_SHA"
+    assets:
+      links:
+        - name: "whl package"
+          url: "${CI_PROJECT_URL}/-/jobs/${CI_JOB_ID}/artifacts/file/dist/$(ls dist/*.whl)"
+        - name: "tar.gz package"
+          url: "${CI_PROJECT_URL}/-/jobs/${CI_JOB_ID}/artifacts/file/dist/$(ls dist/*.tar.gz)"

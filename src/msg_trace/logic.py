@@ -4,6 +4,7 @@ from datetime import datetime
 from .extractor import TsharkExtractor
 from .file_pool import FilePool
 from .report import AsciiReporter, MarkdownReporter, PlantUMLReporter
+from . import __version__
 
 ASCII_REPORT_WIDTH = 80
 
@@ -16,6 +17,7 @@ def parse_args():
     filters.add_argument('--msisdn', help="select msisdn as filter and its value")
     parser.add_argument('--dump_folder', default='.', help='path to folder containing dumps')
     parser.add_argument('-r','--render',help="select render type between ASCII and markdown", required=True, choices=['ascii','md'])
+    parser.add_argument('--version', action='version', version=f'%(prog)s v{__version__}')
     # filters.add_argument('--imsi', help="select imsi as filter and its value")
 
     # test data;

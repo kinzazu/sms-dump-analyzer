@@ -30,24 +30,21 @@ sudo apt install wireshark
 sudo apt install wireshark-cli 
 ```
 
-## Project Setup
+## Install msg_trace
 
-1. Clone the repository
-   ```bash
-   git clone https://github.com/yourusername/dump_analyzer.git
-   cd dump_analyzer
-   ```
+### With creating an isolation environment
 
-2. No formal dependency management is in place, but the project primarily uses standard Python libraries
+1. Download the package from the [Releases](https://gitsrv.svyazcom.ru/devops/ota-standartisation/-/releases) tab
+2. create virtual environment
 
-3. The main external dependency is `tshark`, which must be installed separately as described above
-
-## Configuration
-
-The project uses hardcoded paths in some places. Key configuration points:
-
-- In `tshark_search/extractor.py`, the default path for tshark on macOS is set to `/Applications/Wireshark.app/Contents/MacOS/tshark`
-- You can override this by providing a custom path when initializing the `TsharkExtractor` class
+```shell
+$ python3 -m venv venv_name
+$ source venv_name/bin/activate 
+# ex. v0.1.0
+$ pip install msg_trace-0.1.0.tar.gz
+$ msg-trace --version
+$ msg-trace v0.1.0
+```
 
 ## Usage
 
@@ -74,6 +71,26 @@ python find_messages_in_dump.py --dump_folder /path/to/dumps --msisdn 7900123456
 # Find all messages related to a specific IMSI
 python find_messages_in_dump.py --dump_folder /path/to/dumps --imsi 250991234567890
 ```
+
+## Project Setup
+
+1. Clone the repository
+   ```bash
+   git clone https://github.com/yourusername/dump_analyzer.git
+   cd dump_analyzer
+   ```
+
+2. No formal dependency management is in place, but the project primarily uses only standard Python libraries
+
+3. The main external dependency is `tshark`, which must be installed separately as described above
+
+## Configuration
+
+~~The project uses hardcoded paths in some places. Key configuration points:~~
+
+~~- In `tshark_search/extractor.py`, the default path for tshark on macOS is set to `/Applications/Wireshark.app/Contents/MacOS/tshark`~~
+~~- You can override this by providing a custom path when initializing the `TsharkExtractor` class~~
+
 
 ## Project Structure
 
@@ -104,6 +121,7 @@ The project uses Python's standard `unittest` framework for testing.
 ### Running Tests
 
 To run all tests:
+
 ```bash
 python -m unittest discover tests
 ```
@@ -121,7 +139,7 @@ python -m unittest tests.test_models.TestMessage.test_message_creation
 ## Debugging
 
 - The application can save extracted JSON data to a file for debugging purposes by setting `save_json=True` when initializing `TsharkExtractor`
-- You can run individual components separately for debugging (see the `__main__` blocks in various modules)
+~~- You can run individual components separately for debugging (see the `__main__` blocks in various modules)~~
 
 ## Example Output
 

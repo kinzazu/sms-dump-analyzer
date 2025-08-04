@@ -7,14 +7,13 @@ stages:
   - build
   - release
 
-
 variables:
   PROJECT_VERSION: ""
 
 
 job_build:
+  stage: build
   image: python3.11
-  extends: .sc_common_relaxed-build-rules
   before_script:
     - python3 -m pip install --upgrade build
   script:
@@ -26,13 +25,12 @@ job_build:
       - dist/
 #    expire_in: 20 days
 
-
 job_release:
+  stage: release
   image: registry.gitlab.com/gitlab-org/release-cli:latest
   variables:
     PROJECT_VERSION: "$CI_COMMIT_TAG"
-  
-  extends: .sc_common_relaxed-build-rules
+
   needs:
     - job: job_build
       artifacts: true

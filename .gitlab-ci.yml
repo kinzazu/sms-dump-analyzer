@@ -13,9 +13,7 @@ variables:
 
 job_build:
   image: python3.11
-  rules:
-    - if: !reference [.sc_common_if-feature-branch]
-      when: on_success
+  extends: .sc_common_relaxed-build-rules
   before_script:
     - python3 -m pip install --upgrade build
   script:
@@ -27,17 +25,16 @@ job_build:
       - dist/
 #    expire_in: 20 days
 
-
+workflow:
+  auto_cancel:
+    on_job_failure: all
 
 job_release:
   image: registry.gitlab.com/gitlab-org/release-cli:latest
   variables:
     PROJECT_VERSION: "$CI_COMMIT_TAG"
-
-  rules:
-    - if: !reference [.sc_common_if-feature-branch]
-      when: on_success
-
+  
+  extends: .sc_common_relaxed-build-rules
   needs:
     - job: job_build
       artifacts: true

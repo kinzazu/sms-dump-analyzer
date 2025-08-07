@@ -2,8 +2,8 @@ import unittest
 from datetime import datetime, timedelta
 from pathlib import Path
 
-from tshark_search.capinfo import CapInfo
-from tshark_search.file_pool import FilePool
+from msg_trace.capinfo import CapInfo
+from msg_trace.file_pool import FilePool
 
 
 class TestFilePool(unittest.TestCase):

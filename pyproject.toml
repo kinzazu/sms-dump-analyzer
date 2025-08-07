@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools >= 77.0.3"]
+build-backend = "setuptools.build_meta"
+[project]
+name = "sms-dump-analyzer"
+version = "0.1.0"
+requires-python = ">=3.9"
+authors = [
+    {name = "Niko Leontiev", email = "nikoleontiev@google.com"}
+]
+
+description = "Applet for Tshark to search a message chains in dumps"
+readme = "README.md"
+license = "GPL-3.0-or-later"
+license-files = ["LICEN[CS]E*"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+    "Private :: Do Not Upload"
+]
+
+[project.urls]
+Homepage = "https://github.com/kinzazu/sms-dump-analyzer/"
+Issues = "https://github.com/kinzazu/sms-dump-analyzer/issues"

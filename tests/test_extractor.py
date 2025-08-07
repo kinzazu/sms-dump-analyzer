@@ -4,8 +4,8 @@ from datetime import datetime
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from tshark_search.Parser import JsonParser
-from tshark_search.extractor import TsharkExtractor
+from msg_trace.Parser import JsonParser
+from msg_trace.extractor import TsharkExtractor
 
 
 class TestTsharkExtractor(unittest.TestCase):

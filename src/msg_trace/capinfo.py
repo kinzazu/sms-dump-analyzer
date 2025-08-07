@@ -11,6 +11,15 @@ class CapInfo:
         self.duration = None
         self.frames = None
 
+
+    @classmethod
+    def escape_specials(cls, pcap_path):
+        new_name = str(pcap_path).replace(' ', r'\ ')
+        new_name = str(new_name).replace('(', r'\(')
+        new_name = str(new_name).replace(')', r'\)')
+
+        return new_name
+
     @classmethod
     def form_info(cls, pcap_path, capinfos_cmd="capinfos"):
         """
@@ -23,7 +32,11 @@ class CapInfo:
 
         # option description
         # -a start -e end -S Unix timestamp in format -T table output, -r without header -m separated my comma
-        cmd = f"{capinfos_cmd} -S -a -e -T -r -m -c {pcap_path}"
+
+        str_path = cls.escape_specials(pcap_path)
+
+        # cmd = f"{capinfos_cmd} -S -a -e -T -r -m -c {pcap_path}"
+        cmd = f"{capinfos_cmd} -S -a -e -T -r -m -c {str_path}"
 
         proc = subprocess.run(cmd, shell=True, capture_output=True, text=True)
 

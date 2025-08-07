@@ -4,6 +4,9 @@ from datetime import datetime
 from .extractor import TsharkExtractor
 from .file_pool import FilePool
 from .report import AsciiReporter, MarkdownReporter, PlantUMLReporter
+from .msgstore import MessageStore
+from . import analyzer
+from . import __version__
 
 ASCII_REPORT_WIDTH = 80
 
@@ -16,6 +19,7 @@ def parse_args():
     filters.add_argument('--msisdn', help="select msisdn as filter and its value")
     parser.add_argument('--dump_folder', default='.', help='path to folder containing dumps')
     parser.add_argument('-r','--render',help="select render type between ASCII and markdown", required=True, choices=['ascii','md'])
+    parser.add_argument('--version', action='version', version=f'%(prog)s v{__version__}')
     # filters.add_argument('--imsi', help="select imsi as filter and its value")
 
     # test data;
@@ -47,14 +51,20 @@ def render_report(chain, render_type):
 
 def main():
     args = parse_args()
-    store = msgstore.MessageStore()
+    store = MessageStore()
     if args.dump_folder:
         fp = FilePool(args.dump_folder)
     else:
         raise ValueError('dump_folder must be specified')
 
-    since = datetime.strptime(args.since, "%Y-%m-%d") if args.since else datetime.fromtimestamp(0)
-    to = datetime.strptime(args.to, "%Y-%m-%d") if args.to else datetime.now()
+    try:
+        since = datetime.strptime(args.since, "%Y-%m-%d-%H-%M-%S") if args.since else datetime.fromtimestamp(0)
+        to = datetime.strptime(args.to, "%Y-%m-%d-%H-%M-%S") if args.to else datetime.now()
+    except ValueError:
+        # print('invalid date format')
+        since = datetime.strptime(args.since, "%Y-%m-%d") if args.since else datetime.fromtimestamp(0)
+        to = datetime.strptime(args.to, "%Y-%m-%d") if args.to else datetime.now()
+    # else:
 
     tshark_filter = {"start": since.timestamp(), "end":to.timestamp()}
 

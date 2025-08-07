@@ -2,8 +2,8 @@ import unittest
 from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 
-from tshark_search.Parser import JsonParser
-from tshark_search.models import Message, MsgType, TCAPState
+from msg_trace.Parser import JsonParser
+from msg_trace.models import Message, MsgType, TCAPState
 
 
 class TestJsonParser(unittest.TestCase):

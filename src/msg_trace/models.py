@@ -65,6 +65,7 @@ class TCAPState(Enum):
     Begin = 0
     Continue = 1
     End = 2
+    Abort = 3
 
 @dataclass
 class TCAPContext:

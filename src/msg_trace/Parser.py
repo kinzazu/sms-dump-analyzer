@@ -88,6 +88,10 @@ class JsonParser:
         elif tcap_json.get('tcap.continue_element') is not None:
             tid = tcap_json['tcap.continue_element']['tcap.tid']
             tcap_state = TCAPState.Continue
+        elif tcap_json.get('tcap.abort_element') is not None:
+            tid = tcap_json['tcap.abort_element']['tcap.tid']
+            tcap_state = TCAPState.Abort
+
         else:
             raise RuntimeError(f"Cound't parse TCAP info. tcap_json is empty: {tcap_json}")
 

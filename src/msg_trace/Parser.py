@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 # ─── MAP specific JSON keys ─────────────────────────────────────────────────────
 class JsonField(str, Enum):
     """Immutable constants for tshark JSON fields."""
+
     COMPONENT_TREE_KEY     = "gsm_map.old.Component_tree"
     INVOKE_ELEMENT_KEY     = "gsm_old.invoke_element"
     RETURN_RESULT_LAST_KEY = "gsm_old.returnResultLast_element"
@@ -30,9 +31,6 @@ class JsonParser:
 
     Attributes and helper methods in this class are used to parse different layers of
     protocol data and fill the respective fields in the resulting `Message` object.
-
-    :ivar attribute1: Placeholder description of attribute1.
-    :ivar attribute2: Placeholder description of attribute2.
     """
 
     # ---------- api --------------
@@ -50,23 +48,21 @@ class JsonParser:
         ts = datetime.fromtimestamp(ts).astimezone(timezone.utc)
 
         # helpers
-        m3ua_json = layers['m3ua']
-        tcap_json = layers['tcap']
-        gsm_map = layers['gsm_map']['gsm_map.old.Component_tree']
+        m3ua_json = layers["m3ua"]
+        tcap_json = layers["tcap"]
+        gsm_map = layers["gsm_map"]["gsm_map.old.Component_tree"]
 
         # specific for sms
-        sms_pdu = layers.get('gsm_sms')
+        sms_pdu = layers.get("gsm_sms")
 
-        #fill tcap
+        # fill tcap
         tid, tcap_state = self._fill_tcap(tcap_json)
 
         # Initialize message
-        message = Message(time=ts,
-                          tid=tid,
-                          tcap_state=tcap_state)
+        message = Message(time=ts, tid=tid, tcap_state=tcap_state)
 
-        #fill_map_part
-        message = self._new_fill_gsm_map(gsm_map,message)
+        # fill_map_part
+        message = self._new_fill_gsm_map(gsm_map, message)
         # message = self._fill_gsm_map(gsm_map, message)
 
         # fill sms part
@@ -79,17 +75,17 @@ class JsonParser:
 
     @staticmethod
     def _fill_tcap(tcap_json: dict) -> tuple[Any, Literal[TCAPState.Begin, TCAPState.End, TCAPState.Continue]]:
-        if tcap_json.get('tcap.begin_element') is not None:
-            tid = tcap_json['tcap.begin_element']['tcap.tid']
+        if tcap_json.get("tcap.begin_element") is not None:
+            tid = tcap_json["tcap.begin_element"]["tcap.tid"]
             tcap_state = TCAPState.Begin
-        elif tcap_json.get('tcap.end_element') is not None:
-            tid = tcap_json['tcap.end_element']['tcap.tid']
+        elif tcap_json.get("tcap.end_element") is not None:
+            tid = tcap_json["tcap.end_element"]["tcap.tid"]
             tcap_state = TCAPState.End
-        elif tcap_json.get('tcap.continue_element') is not None:
-            tid = tcap_json['tcap.continue_element']['tcap.tid']
+        elif tcap_json.get("tcap.continue_element") is not None:
+            tid = tcap_json["tcap.continue_element"]["tcap.tid"]
             tcap_state = TCAPState.Continue
-        elif tcap_json.get('tcap.abort_element') is not None:
-            tid = tcap_json['tcap.abort_element']['tcap.tid']
+        elif tcap_json.get("tcap.abort_element") is not None:
+            tid = tcap_json["tcap.abort_element"]["tcap.tid"]
             tcap_state = TCAPState.Abort
 
         else:
@@ -102,108 +98,128 @@ class JsonParser:
         rd_da = "gsm_map.sm.sm_RP_DA"
         old_rd_da = "gsm_old.sm_RP_DA"
 
-
         if rd_da in gsm_invoke.keys():
             rp_da_val = int(gsm_invoke.get("gsm_map.sm.sm_RP_DA"))
-            sm_rp_da_tree = gsm_invoke.get('gsm_map.sm.sm_RP_DA_tree')
+            sm_rp_da_tree = gsm_invoke.get("gsm_map.sm.sm_RP_DA_tree")
         elif old_rd_da in gsm_invoke.keys():
             rp_da_val = int(gsm_invoke.get("gsm_old.sm_RP_DA"))
-            sm_rp_da_tree = gsm_invoke.get('gsm_old.sm_RP_DA_tree')
+            sm_rp_da_tree = gsm_invoke.get("gsm_old.sm_RP_DA_tree")
         else:
-            print('[ERROR] no rd_da')
+            print("[ERROR] no rd_da")
             sm_rp_da_tree = {}
 
         match RPDestinationAddress(rp_da_val):
             case RPDestinationAddress.IMSI:
-                msg.imsi = sm_rp_da_tree.get('e212.imsi')
+                msg.imsi = sm_rp_da_tree.get("e212.imsi")
 
             case RPDestinationAddress.LMSI:
                 # TODO processing of the LMSI
-                print('я хз что с этим делать пока')
+                print("я хз что с этим делать пока")
 
             case RPDestinationAddress.MSISDN:
-                print(f'{msg.tid}. Unsupported type RP-DA value: {rp_da_val}')
+                print(f"{msg.tid}. Unsupported type RP-DA value: {rp_da_val}")
 
             case RPDestinationAddress.ServiceCenterAddress:
                 pass
                 # print(f'{msg.tid}. Unsupported type RP-DA value: {rp_da_val}')
             case _:
                 print(rp_da_val, msg.tid)
-                raise RuntimeError('unknown rp_da_val')
+                raise RuntimeError("unknown rp_da_val")
 
         return msg
 
     # @staticmethod
 
-    def _(self): pass
+    def _fill_incoming_message(self, gsm_layer_json, msg):
+        gsm_invoke = gsm_layer_json.get("gsm_old.invoke_element")
+        if gsm_invoke is None:
+            raise RuntimeError(f"{msg.tcap_state=}, {msg.tid=}, {gsm_layer_json=}")
 
-    def _new_fill_gsm_map(self, gsm_layer_json: dict,msg: Message):
+        msg.opcode = self._gms_opcode_from_invoke(gsm_invoke)
+
+        match msg.opcode:
+            case MsgType.SRI:
+                msg.msisdn = gsm_invoke["gsm_map.sm.msisdn_tree"]["e164.msisdn"]
+            case MsgType.Forward_SM:
+                msg = self._rd_da_based_fill(gsm_invoke, msg)
+
+        return msg
+
+    def _fill_result_last(self, gsm_layer_json, msg):
+        result_element = gsm_layer_json.get(JsonField.RETURN_RESULT_LAST_KEY)
+
+        # Get result element tree
+        r_e_tree = result_element.get("gsm_old.resultretres_element")
+
+        if r_e_tree is None:
+            keys_analis = [x for x in result_element.keys()]
+            keys_analis.remove("gsm_old.invokeID")
+            if keys_analis:
+                for key in keys_analis:
+                    result_element = gsm_layer_json.get(key)
+                    print(result_element)
+
+            # possibly just a good empty response
+            msg.opcode = MsgType.ResultLast
+            return msg
+        # while r_e_tree is None:
+        #     if r_e_tree is None:
+        #         r_e_tree = result_element.get('gsm_map.sm.sm_RP_DA_tree')
+
+        msg.imsi = r_e_tree.get("e212.imsi")
+        opcode = int(r_e_tree.get("gsm_old.opCode", -1))
+        if opcode != -1:
+            msg.opcode = MsgType(opcode)
+        return msg
+
+    def _error_result(self, gsm_layer_json, msg):
+        msg.opcode = MsgType.Error
+        # TODO replace for proper Error class.
+        err_code_tree = gsm_layer_json[JsonField.OldErrorTree].get("gsm_old.errorCode_tree")
+        err_code = err_code_tree.get("gsm_old.localValue", "-1")
+        msg.imsi = f"{ErrorCode(int(err_code)).name}"
+        return msg
+
+    def _new_fill_gsm_map(self, gsm_layer_json: dict, msg: Message):
         """
         New parsing logic based on tcap transaction type and possible context-names
         """
         match msg.tcap_state:
-            case TCAPState.Begin | TCAPState.Continue :
-                gsm_invoke = gsm_layer_json.get('gsm_old.invoke_element')
-                if gsm_invoke is None:
-                    #TODO processing options for a empty invoke
-                    raise RuntimeError(f'gsm_invoke, {gsm_layer_json}')
+            case TCAPState.Begin:
+                if JsonField.INVOKE_ELEMENT_KEY in gsm_layer_json:
+                    msg = self._fill_incoming_message(gsm_layer_json, msg)
+                if JsonField.RETURN_RESULT_LAST_KEY in gsm_layer_json:
+                    msg = self._fill_result_last(gsm_layer_json, msg)
 
-                msg.opcode = self._gms_opcode_from_invoke(gsm_invoke)
+            case TCAPState.Continue:
+                if JsonField.INVOKE_ELEMENT_KEY in gsm_layer_json:
+                    msg = self._fill_incoming_message(gsm_layer_json, msg)
 
-                match msg.opcode:
-                    case MsgType.SRI:
-                        msg.msisdn = gsm_invoke['gsm_map.sm.msisdn_tree']['e164.msisdn']
-                    case MsgType.Forward_SM:
-                        msg = self._rd_da_based_fill(gsm_invoke, msg)
-
+                if JsonField.RETURN_RESULT_LAST_KEY in gsm_layer_json:
+                    msg = self._fill_result_last(gsm_layer_json, msg)
 
             case TCAPState.End:
                 result_tree = gsm_layer_json.keys()
-                if JsonField.RETURN_RESULT_LAST_KEY in result_tree:
-                    result_element = gsm_layer_json.get(JsonField.RETURN_RESULT_LAST_KEY)
-                    # Get result element tree
-                    r_e_tree = result_element.get('gsm_old.resultretres_element')
-
-                    if r_e_tree is None:
-                        keys_analis = [x for x in result_element.keys()]
-                        keys_analis.remove('gsm_old.invokeID')
-                        if keys_analis:
-                            for key in keys_analis:
-                                result_element = gsm_layer_json.get(key)
-                                print(result_element)
-
-                        # possibly just a good empty response
-                        msg.opcode = MsgType.ResultLast
-                        return msg
-                    # while r_e_tree is None:
-                    #     if r_e_tree is None:
-                    #         r_e_tree = result_element.get('gsm_map.sm.sm_RP_DA_tree')
-
-                    msg.imsi = r_e_tree.get('e212.imsi')
-                    opcode = int(r_e_tree.get('gsm_old.opCode', -1))
-                    if opcode != -1:
-                        msg.opcode = MsgType(opcode)
+                if JsonField.RETURN_RESULT_LAST_KEY in gsm_layer_json:
+                    msg = self._fill_result_last(gsm_layer_json, msg)
 
                 elif JsonField.Error in result_tree:
-                    print('error ola la', gsm_layer_json.get(JsonField.Error))
+                    print("error ola la", gsm_layer_json.get(JsonField.Error))
                 elif JsonField.OldErrorTree in result_tree:
-                    msg.opcode = MsgType.Error
-                    # TODO replace for proper Error class.
-                    err_code_tree = gsm_layer_json[JsonField.OldErrorTree].get('gsm_old.errorCode_tree')
-                    err_code = err_code_tree.get('gsm_old.localValue', '-1')
-                    msg.imsi = f"{ErrorCode(int(err_code)).name}"
+                    msg = self._error_result(gsm_layer_json, msg)
                 else:
+                    print(f"\nWarning: {msg.tcap_state=}, {msg.tid=},  {gsm_layer_json=}")
                     msg.opcode = MsgType.ResultLast
 
         return msg
 
     def _gms_opcode_from_invoke(self, invoke_json):
-        val = invoke_json.get('gsm_old.opCode_tree')
+        val = invoke_json.get("gsm_old.opCode_tree")
         if val is None:
             # TODO processing for a empty opcode tree
-            raise RuntimeError(f'gsm_invoke, {invoke_json}')
+            raise RuntimeError(f"gsm_invoke, {invoke_json}")
 
-        opcode = int(val.get('gsm_old.localValue', -1))
+        opcode = int(val.get("gsm_old.localValue", -1))
 
         return MsgType(opcode)
 
@@ -214,7 +230,7 @@ class JsonParser:
         Tshark sometimes names the field `TP-Destination-Address…`.  We want it
         to be called `tp-destination-address` for downstream processing.
         """
-        names = ['TP-Originating-Address', 'TP-Destination-Address', 'TP-Recipient-Address']
+        names = ["TP-Originating-Address", "TP-Destination-Address", "TP-Recipient-Address"]
         for name in names:
             destination_address_keys = [key for key in map_gms_json.keys() if key.startswith(name)]
             if destination_address_keys:
@@ -235,9 +251,9 @@ class JsonParser:
                 pass
             case MessageTypeIndicator.MO:
                 try:
-                    msg.msisdn = sms_json["tp-destination-address"]['gsm_sms.tp-da']
+                    msg.msisdn = sms_json["tp-destination-address"]["gsm_sms.tp-da"]
                 except KeyError:
-                    print(f'Failed to parse gsm_sms. {msg.tid= }, {sms_json=}')
+                    print(f"Failed to parse gsm_sms. {msg.tid= }, {sms_json=}")
             # case _:
             #     raise RuntimeError(f"Couldn't parse {sms_json}")
         return msg

@@ -7,15 +7,17 @@ from .capinfo import CapInfo
 
 class FilterField(str, Enum):  # NEW
     """Immutable constants for tshark display-filter fields."""
-    MSISDN = 'e164.msisdn'
-    TCAP_TID = 'tcap.tid'
-    IMSI = 'e212.imsi'
+
+    MSISDN = "e164.msisdn"
+    TCAP_TID = "tcap.tid"
+    IMSI = "e212.imsi"
 
 
-#SM-RP-DA
+# SM-RP-DA
 # noinspection SpellCheckingInspection
 class RPDestinationAddress(Enum):
     """ShortMessage Relay Protocol Destination Address type"""
+
     IMSI = 0
     LMSI = 1
     MSISDN = 2
@@ -36,12 +38,16 @@ class OpCode(Enum):
     """
     Operation Code type. Contains only opcodes for the short message service
     """
+
     MT_Forward_SM                   = 44
     SRI                             = 45
     MO_Forward_SM                   = 46
     Report_SM_DeliveryStatus        = 47
     AlertServiceCentreWithoutResult = 49
+    informServiceCentre             = 63
+    alertServiceCentre              = 64
     readyForSM                      = 66
+
     # if MAP version != 3
     Forward_SM                      = 46
 
@@ -58,6 +64,8 @@ class MsgType(Enum):
     Forward_SM = 46
     Report_SM_DeliveryStatus = 47
     AlertServiceCentreWithoutResult = 49
+    informServiceCentre = 63
+    alertServiceCentre = 64
     readyForSM = 66
 
 
@@ -67,12 +75,15 @@ class TCAPState(Enum):
     End = 2
     Abort = 3
 
+
 @dataclass
 class TCAPContext:
     """
     can be filled with class data. Based on type we can check types of files
     """
+
     pass
+
 
 class ErrorCode(Enum):
     Unknown = -1
@@ -155,6 +166,7 @@ class ErrorCode(Enum):
     PositionMethodFailure = 54
     UnknownorUnreachableLCSClient = 58
     MMEventNotSupported = 59
+
 
 @dataclass
 class PDU:

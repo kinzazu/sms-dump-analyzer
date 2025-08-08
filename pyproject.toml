@@ -2,8 +2,8 @@
 requires = ["setuptools >= 77.0.3"]
 build-backend = "setuptools.build_meta"
 [project]
-name = "sms-dump-analyzer"
-version = "0.1.0"
+name = "msg-trace"
+version = "0.1.1"
 requires-python = ">=3.9"
 authors = [
     {name = "Niko Leontiev", email = "nikoleontiev@google.com"}
@@ -18,6 +18,14 @@ classifiers = [
     "Operating System :: OS Independent",
     "Private :: Do Not Upload"
 ]
+
+dependencies = [
+    "progress == 1.6.1"
+
+]
+
+[project.scripts]
+msg-trace = "msg_trace.__main__:main"
 
 [project.urls]
 Homepage = "https://github.com/kinzazu/sms-dump-analyzer/"
